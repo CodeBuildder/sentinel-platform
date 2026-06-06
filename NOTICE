@@ -1,0 +1,16 @@
+Sentinel Platform — GitOps & Integration Layer
+================================================
+
+Original design and architecture by Kaushikkumaran
+GitHub: https://github.com/CodeBuildder/sentinel-platform
+First committed: June 2026
+
+This repo defines the shared contract the Sentinel platform is built on:
+- The cross-agent event schema (event_type, source_agent, severity, component,
+  causality, timestamp, payload)
+- The Helm umbrella chart and deployment harness wiring Argus, Phoenix, and Sentinel
+- Shared k3s manifests for the platform's event bus and chaos-injection layer
+
+Commit history on GitHub serves as timestamped proof of authorship.
+
+This notice must be retained in all copies and derivative works.

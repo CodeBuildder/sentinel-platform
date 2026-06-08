@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodeBuildder/sentinel-platform/schemas/event.schema.json",
+  "title": "Sentinel Platform Shared Event",
+  "description": "Canonical event contract for all Sentinel agents. Every event published to the bus — findings, actions, predictions, incidents — must validate against this schema. Replaces any per-repo stub versions.",
+  "type": "object",
+  "required": ["event_id", "type", "source", "timestamp", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Stable identifier for this event. Used for idempotent writes."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["finding", "action", "prediction", "incident"],
+      "description": "Top-level event class."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "argus", "phoenix", "sentinel", "sentinel-platform",
+        "prometheus", "loki", "falco", "cilium", "kyverno"
+      ],
+      "description": "Agent or adapter that emitted this event."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 / ISO 8601 UTC timestamp."
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the world-model entity this event concerns. Required for findings."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"],
+      "description": "Required for findings."
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Optional incident_id or experiment_id that groups related events."
+    },
+    "replayed": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when re-emitted via the replay API. Replayed events are tagged and do not mutate live state."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-type-specific data."
+    }
+  },
+  "$defs": {
+    "finding_payload": {
+      "type": "object",
+      "required": ["finding_type", "description"],
+      "properties": {
+        "finding_type": {
+          "type": "string",
+          "description": "taxonomy tag, e.g. 'oom', 'network-partition', 'privilege-escalation'"
+        },
+        "description": { "type": "string" },
+        "metric_name": { "type": "string" },
+        "metric_value": { "type": "number" },
+        "threshold": { "type": "number" },
+        "failure_mode": { "type": "string" },
+        "threat_type": { "type": "string" },
+        "attack_stage": { "type": "string" },
+        "blast_radius": {
+          "type": "object",
+          "properties": {
+            "entity_count": { "type": "integer" },
+            "entity_ids": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "action_payload": {
+      "type": "object",
+      "required": ["action_type", "action_id", "status"],
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "description": "e.g. 'pod-kill', 'scale', 'restart', 'failover', 'circuit-break', 'policy-enforce'"
+        },
+        "action_id": { "type": "string", "format": "uuid" },
+        "status": {
+          "type": "string",
+          "enum": ["started", "completed", "failed", "rolled_back", "gated", "auto_approved", "human_approved", "rejected"]
+        },
+        "entity_id": { "type": "string" },
+        "outcome": { "type": "string" },
+        "rationale": { "type": "string" },
+        "blast_radius_entities": { "type": "integer" }
+      }
+    },
+    "prediction_payload": {
+      "type": "object",
+      "required": ["experiment_id", "hypothesis", "predicted_outcome_type", "confidence"],
+      "properties": {
+        "experiment_id": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "hypothesis": { "type": "string" },
+        "predicted_outcome_type": {
+          "type": "string",
+          "enum": ["degraded", "failed", "resilient"]
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "action_type": { "type": "string" },
+        "security_finding_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Argus findings that influenced this prediction (security-informed chaos)."
+        }
+      }
+    },
+    "incident_payload": {
+      "type": "object",
+      "required": ["incident_id", "state", "correlated_finding_ids"],
+      "properties": {
+        "incident_id": { "type": "string", "format": "uuid" },
+        "state": {
+          "type": "string",
+          "enum": ["open", "correlating", "resolved", "escalated"]
+        },
+        "correlated_finding_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "root_cause": { "type": "string" },
+        "contributing_factors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "why_fused": { "type": "string" },
+        "suggested_response": { "type": "string" },
+        "resolved_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

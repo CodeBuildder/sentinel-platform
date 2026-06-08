@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodeBuildder/sentinel-platform/schemas/incident_memory.schema.json",
+  "title": "Incident Memory Record",
+  "description": "Persists the fault→action→outcome triple for a resolved incident. Keyed by fault_fingerprint so duplicate fault patterns accumulate a success-rate history that informs future heal-plan confidence.",
+  "type": "object",
+  "required": ["incident_id", "fault_fingerprint", "actions_taken", "outcome", "duration_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "incident_id": { "type": "string", "format": "uuid" },
+    "fault_fingerprint": {
+      "type": "string",
+      "description": "Stable hash derived from entity_id + failure_mode + affected_components. Same fault pattern always produces the same fingerprint."
+    },
+    "entity_id": { "type": "string" },
+    "failure_mode": { "type": "string" },
+    "actions_taken": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action_type", "action_id", "outcome"],
+        "properties": {
+          "action_type": { "type": "string" },
+          "action_id": { "type": "string" },
+          "outcome": {
+            "type": "string",
+            "enum": ["success", "failure", "partial", "rolled_back"]
+          },
+          "duration_ms": { "type": "integer" }
+        }
+      }
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["resolved", "escalated", "partial"],
+      "description": "Overall incident outcome."
+    },
+    "duration_ms": {
+      "type": "integer",
+      "description": "Time from incident open to resolved/escalated."
+    },
+    "was_prediction_correct": {
+      "type": "boolean",
+      "description": "True if the experiment planner's predicted_outcome matched the actual outcome."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

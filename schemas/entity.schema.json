@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodeBuildder/sentinel-platform/schemas/entity.schema.json",
+  "title": "World Model Entity",
+  "description": "A node in the world model topology graph. Carries per-entity state read by both Argus and Phoenix.",
+  "type": "object",
+  "required": ["entity_id", "entity_type", "name", "namespace"],
+  "additionalProperties": false,
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "description": "Stable unique identifier, e.g. 'pod/default/my-app-6d9f'."
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": ["service", "pod", "node", "volume", "vlan", "instance"],
+      "description": "Entity class. Constrains which edge types are valid."
+    },
+    "name": { "type": "string" },
+    "namespace": {
+      "type": "string",
+      "description": "k8s namespace, sim namespace, or 'cluster' for nodes."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "slo_target": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Target availability expressed as a fraction (0.999 = 99.9%)."
+    },
+    "error_budget_remaining_minutes": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Remaining error budget in minutes for the current SLO window."
+    },
+    "fragility_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0 = perfectly robust, 1 = highly fragile. Computed by Phoenix from blast-radius and recent fault history."
+    },
+    "security_posture": {
+      "type": "string",
+      "enum": ["clean", "low-risk", "medium-risk", "high-risk", "critical"],
+      "description": "Current security posture assigned by Argus."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "deleted_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Tombstone timestamp. Entities are soft-deleted, never hard-deleted."
+    }
+  },
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "required": ["source_id", "target_id", "edge_type"],
+      "additionalProperties": false,
+      "properties": {
+        "source_id": { "type": "string" },
+        "target_id": { "type": "string" },
+        "edge_type": {
+          "type": "string",
+          "enum": ["depends-on", "runs-on", "routes-through"],
+          "description": "depends-on: service→service/pod. runs-on: pod→node. routes-through: service→vlan/service."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Dependency strength (0 = loosely coupled, 1 = hard dependency).",
+          "default": 0.5
+        },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "allowed_edges": {
+      "description": "Valid source→target entity type combinations per edge type.",
+      "depends-on": {
+        "sources": ["service", "pod"],
+        "targets": ["service", "pod", "volume"]
+      },
+      "runs-on": {
+        "sources": ["pod"],
+        "targets": ["node"]
+      },
+      "routes-through": {
+        "sources": ["service"],
+        "targets": ["vlan", "service"]
+      }
+    }
+  }
+}

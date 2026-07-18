@@ -64,7 +64,7 @@ contract:
                    ┌───────────────────────────────┐
                    │  Shared k3s cluster (3-node)  │
                    │  Prometheus / Grafana / Loki  │
-                   │  Cilium eBPF · Claude API     │
+                   │  Cilium eBPF · OpenAI API     │
                    └───────────────────────────────┘
 ```
 
